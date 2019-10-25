@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+    <Button
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/pin"
+    android:textColor="@color/colorPrimaryDark"
+    android:gravity="center"
+    android:padding="0dp"
+    android:text="Name"
+    android:textSize="10sp"
+    android:textAlignment="center"
+
+    android:name="com.google.ar.sceneform.ux.ArFragment"
+    android:orientation="horizontal"
+    android:layout_width="10sp"
+    android:layout_height="10sp"/>
+
+
+
+
