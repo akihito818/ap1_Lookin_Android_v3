@@ -1,19 +1,19 @@
 @file:Suppress("DEPRECATION")
 
-package com.example.lookin
+package net.kboy.sceneformsample.activity
 
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
+import android.support.v7.app.AlertDialog
+import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.MotionEvent
+import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import com.google.ar.core.*
 import com.google.ar.sceneform.AnchorNode
 import com.google.ar.sceneform.math.Quaternion
@@ -24,6 +24,10 @@ import com.google.ar.sceneform.rendering.ViewRenderable
 import com.google.ar.sceneform.ux.ArFragment
 import com.google.ar.sceneform.ux.TransformableNode
 import kotlinx.android.synthetic.main.activity_image.*
+import net.kboy.sceneformsample.R
+import net.kboy.sceneformsample.activity.menu.MainActivity
+import net.kboy.sceneformsample.activity.menu.MainActivity2
+import net.kboy.sceneformsample.fragment.ImageArFragment
 import java.io.IOException
 
 @Suppress("DEPRECATION")
@@ -34,7 +38,6 @@ class ImageActivity : AppCompatActivity() {
     private  var btnRenderable :ViewRenderable?=null
     var ID = 0
 
-    @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_image)
@@ -45,7 +48,7 @@ class ImageActivity : AppCompatActivity() {
         arFragment.planeDiscoveryController.setInstructionView(null)
         arFragment.arSceneView.scene.addOnUpdateListener {
             val frame = arFragment.arSceneView.arFrame
-            val augmentedImages: Collection<AugmentedImage> = frame!!.getUpdatedTrackables(AugmentedImage::class.java)
+            val augmentedImages: Collection<AugmentedImage> = frame.getUpdatedTrackables(AugmentedImage::class.java)
 
 
             augmentedImages.forEach {
@@ -64,7 +67,7 @@ class ImageActivity : AppCompatActivity() {
                     if (it.name == "tanaka") {
                         ID = 999
                         Toast.makeText(applicationContext, "田中 ID = "+ ID, Toast.LENGTH_SHORT).show()
-                        placeObject(arFragment, it.createAnchor(it.centerPose),Uri.parse("model.sfb"))
+                        placeObject_c(arFragment, it.createAnchor(it.centerPose),Uri.parse("model.sfb"))
 
 
 
@@ -110,13 +113,31 @@ class ImageActivity : AppCompatActivity() {
     }
 
     // FIXME: copied from MainActivity
-    @RequiresApi(Build.VERSION_CODES.N)
     private fun placeObject(fragment: ArFragment, anchor: Anchor, model: Uri) {
         ModelRenderable.builder()
                 .setSource(fragment.context, model)
                 .build()
                 .thenAccept {
                     addNodeToScene(fragment, anchor, it)
+
+                }
+                .exceptionally {
+                    val builder = AlertDialog.Builder(this)
+                    builder.setMessage(it.message).setTitle("Error")
+                    val dialog = builder.create()
+                    dialog.show()
+
+                    return@exceptionally null
+                }
+
+
+    }
+    private fun placeObject_c(fragment: ArFragment, anchor: Anchor, model: Uri) {
+        ModelRenderable.builder()
+                .setSource(fragment.context, model)
+                .build()
+                .thenAccept {
+                    addNodeToScene_c(fragment, anchor, it)
 
                 }
                 .exceptionally {
@@ -145,8 +166,20 @@ class ImageActivity : AppCompatActivity() {
         addName(anchorNode,node," ");
 
     }
+    private fun addNodeToScene_c(fragment: ArFragment, anchor: Anchor, renderable: Renderable) {
+        val anchorNode = AnchorNode(anchor)
+        val node = TransformableNode(fragment.transformationSystem).apply{
+            setParent(anchorNode)
+            fragment.arSceneView.scene.addChild(anchorNode)
 
+            localRotation= Quaternion.lookRotation(Vector3.down(), Vector3.up())
+        }
+        node.renderable = renderable
+        node.localRotation= Quaternion.lookRotation(Vector3.down(), Vector3.up())
+        node.select()
+        addName_c(anchorNode,node," ");
 
+    }
 
 
     private fun addName(anchorNode: AnchorNode, node: TransformableNode, name: String) {
@@ -179,4 +212,30 @@ class ImageActivity : AppCompatActivity() {
 
     }
 
+
+    private fun addName_c(anchorNode: AnchorNode, node: TransformableNode, name: String) {
+        ViewRenderable.builder().setView(this, R.layout.content_main)
+                .build()
+                .thenAccept { ViewRenderable ->
+                    val nameView = TransformableNode(arFragment.transformationSystem).apply {
+                        localRotation = Quaternion.lookRotation(Vector3.down(), Vector3.up())
+                    }
+                    nameView.localPosition = Vector3(0f, node.localPosition.y + 0f, 0f)
+                    nameView.localRotation = Quaternion.lookRotation(Vector3.down(), Vector3.up())
+                    nameView.setParent(anchorNode)
+                    nameView.renderable = ViewRenderable
+                    nameView.select()
+
+                    val txt_name = ViewRenderable.view as TextView
+
+                    val intent = Intent(this, MainActivity2::class.java)
+                    txt_name.text = name
+
+                    txt_name.setOnClickListener {
+                        startActivity(intent)
+                    }
+
+                }
+
+    }
 }
